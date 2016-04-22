@@ -2,8 +2,6 @@ FROM debian:jessie
 
 MAINTAINER Ilya Epifanov <elijah.epifanov@gmail.com>
 
-ENV PHP_VERSION=5.6.17
-
 RUN apt-get update \
  && apt-get install -y curl ca-certificates software-properties-common python-software-properties \
  && apt-get clean \
@@ -17,6 +15,8 @@ RUN curl -o /usr/local/bin/gosu -SL "https://github.com/tianon/gosu/releases/dow
         && chmod +x /usr/local/bin/gosu
 
 RUN curl -s http://www.dotdeb.org/dotdeb.gpg | apt-key add -
+
+ENV PHP_VERSION=5.6.19
 
 RUN apt-get update \
  && apt-get install -y tzdata locales-all "php5-cli=$PHP_VERSION+*" "php5-fpm=$PHP_VERSION+*" "php5-curl=$PHP_VERSION+*" "php5-mysqlnd=$PHP_VERSION+*" "php5-pgsql=$PHP_VERSION+*" "php5-gd=$PHP_VERSION+*" php5-mongo php5-memcache php5-apcu "php5-intl=$PHP_VERSION+*" php5-xdebug php5-imagick php5-mcrypt --no-install-recommends \
@@ -35,6 +35,12 @@ RUN curl -sL --raw https://github.com/aerospike/aerospike-client-php/archive/${A
  && make install \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+RUN export VERSION=`php -r "echo PHP_MAJOR_VERSION.PHP_MINOR_VERSION;"` \
+    && curl -A "Docker" -o /tmp/blackfire-probe.tar.gz -D - -L -s https://blackfire.io/api/v1/releases/probe/php/linux/amd64/${VERSION} \
+    && tar zxpf /tmp/blackfire-probe.tar.gz -C /tmp \
+    && mv /tmp/blackfire-*.so `php -r "echo ini_get('extension_dir');"`/blackfire.so \
+    && echo "extension=blackfire.so\nblackfire.agent_socket=\${BLACKFIRE_PORT}" > /etc/php5/fpm/conf.d/00-blackfire.ini
 
 ENV PATH=/usr/local/bin:/bin:/usr/bin
 
