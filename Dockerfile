@@ -2,7 +2,7 @@ FROM debian:wheezy
 
 MAINTAINER Ilya Epifanov <elijah.epifanov@gmail.com>
 
-ENV PHP_VERSION=5.5.36
+ENV PHP_VERSION=5.5.37
 
 RUN apt-get update \
  && apt-get install -y curl ca-certificates software-properties-common python-software-properties \
@@ -51,5 +51,8 @@ RUN echo 'date.timezone = UTC' > /etc/php5/fpm/conf.d/00-timezone.ini
 RUN echo 'date.timezone = UTC' > /etc/php5/cli/conf.d/00-timezone.ini
 ADD aerospike.ini /etc/php5/fpm/conf.d/00-aerospike.ini
 ADD aerospike.ini /etc/php5/cli/conf.d/00-aerospike.ini
+
+RUN unlink /etc/php5/fpm/conf.d/20-xdebug.ini \
+ && unlink /etc/php5/cli/conf.d/20-xdebug.ini
 
 CMD ["/usr/sbin/php5-fpm", "-F"]
