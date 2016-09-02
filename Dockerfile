@@ -1,58 +1,51 @@
-FROM debian:wheezy
+FROM debian:jessie
 
-MAINTAINER Ilya Epifanov <elijah.epifanov@gmail.com>
+RUN sh -c "echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections" && \
+    apt-get update -qq -y &&\
+    apt-get install -y curl ca-certificates software-properties-common python-software-properties &&\
+    apt-get clean &&\
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-ENV PHP_VERSION=5.5.37
+RUN sh -c "gpg --keyserver pool.sks-keyservers.net --recv-keys B42F6819007F00F88E364FD4036A9C25BF357DD4" && \
+    curl -o /usr/local/bin/gosu -SL "https://github.com/tianon/gosu/releases/download/1.6/gosu-$(dpkg --print-architecture)" && \
+    curl -o /usr/local/bin/gosu.asc -SL "https://github.com/tianon/gosu/releases/download/1.6/gosu-$(dpkg --print-architecture).asc"  && \
+    gpg --verify /usr/local/bin/gosu.asc &&\
+    rm /usr/local/bin/gosu.asc && \
+    chmod +x /usr/local/bin/gosu
 
-RUN apt-get update \
- && apt-get install -y curl ca-certificates software-properties-common python-software-properties \
- && apt-get clean \
- && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+ENV PHP_VERSION=7.0.10-1~dotdeb+8.1
 
-RUN gpg --keyserver pool.sks-keyservers.net --recv-keys B42F6819007F00F88E364FD4036A9C25BF357DD4
-RUN curl -o /usr/local/bin/gosu -SL "https://github.com/tianon/gosu/releases/download/1.6/gosu-$(dpkg --print-architecture)" \
-        && curl -o /usr/local/bin/gosu.asc -SL "https://github.com/tianon/gosu/releases/download/1.6/gosu-$(dpkg --print-architecture).asc" \
-        && gpg --verify /usr/local/bin/gosu.asc \
-        && rm /usr/local/bin/gosu.asc \
-        && chmod +x /usr/local/bin/gosu
+RUN sh -c "\
+    curl -s http://www.dotdeb.org/dotdeb.gpg | apt-key add - ;\
+    echo 'deb http://packages.dotdeb.org jessie all' >> /etc/apt/sources.list ; \
+    echo 'deb-src http://packages.dotdeb.org jessie all' >> /etc/apt/sources.list" && \
+    apt-get update -qq -y &&\
+    apt-get install -y tzdata locales-all "php7.0-cli=$PHP_VERSION" "php7.0-dev=$PHP_VERSION" "php7.0-xml=$PHP_VERSION" "php7.0-fpm=$PHP_VERSION" "php7.0-curl=$PHP_VERSION" "php7.0-mysql=$PHP_VERSION" "php7.0-pgsql=$PHP_VERSION" "php7.0-gd=$PHP_VERSION" php7.0-mongodb php7.0-memcached php7.0-apcu "php7.0-intl=$PHP_VERSION" php7.0-imagick php7.0-mcrypt --no-install-recommends &&\
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-RUN curl -s http://www.dotdeb.org/dotdeb.gpg | apt-key add -
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer && \
+    apt-get update -qq -y && \
+    apt-get --assume-yes -y -f install git zip build-essential && \
+  sh -c "\
+    mkdir -p /usr/local/ssl/lib; ln -s /usr/lib/x86_64-linux-gnu/libcrypto.a /usr/local/ssl/lib/libcrypto.a; \
+    ln -s /usr/lib/x86_64-linux-gnu/libcrypto.so /usr/local/ssl/lib/libcrypto.so"
 
-RUN echo 'deb http://packages.dotdeb.org wheezy-php55 all' > /etc/apt/sources.list.d/dotdeb.list
-RUN echo "deb http://ftp.de.debian.org/debian wheezy-backports main" >> /etc/apt/sources.list
-
-RUN apt-get update \
- && apt-get install -y tzdata locales-all "php5-cli=$PHP_VERSION-*" "php5-fpm=$PHP_VERSION-*" "php5-curl=$PHP_VERSION-*" "php5-xhprof=$PHP_VERSION-*" "php5-mysqlnd=$PHP_VERSION-*" "php5-pgsql=$PHP_VERSION-*" "php5-gd=$PHP_VERSION-*" php5-mongo php5-memcache php5-apcu "php5-intl=$PHP_VERSION-*" "php5-xdebug=$PHP_VERSION-*" php5-imagick php5-mcrypt php5-pinba --no-install-recommends \
- && apt-get clean \
- && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-
-ENV AEROSPIKE_VERSION=3.4.2
-
-RUN curl -sL --raw https://github.com/aerospike/aerospike-client-php/archive/${AEROSPIKE_VERSION}.tar.gz -o /tmp/aerospike.tar.gz \
- && mkdir /tmp/aerospike \
- && tar zxf /tmp/aerospike.tar.gz --strip-components=1 -C /tmp/aerospike \
- && cd /tmp/aerospike/src/aerospike \
- && apt-get update \
- && apt-get install -y build-essential autoconf libssl-dev liblua5.1-dev "php5-dev=$PHP_VERSION-*" "php-pear=$PHP_VERSION-*" --no-install-recommends \
- && AEROSPIKE_C_CLIENT=3.1.24 ./build.sh \
- && make install \
- && apt-get clean \
- && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-
-RUN export VERSION=`php -r "echo PHP_MAJOR_VERSION.PHP_MINOR_VERSION;"` \
-    && curl -A "Docker" -o /tmp/blackfire-probe.tar.gz -D - -L -s https://blackfire.io/api/v1/releases/probe/php/linux/amd64/${VERSION} \
-    && tar zxpf /tmp/blackfire-probe.tar.gz -C /tmp \
-    && mv /tmp/blackfire-*.so `php -r "echo ini_get('extension_dir');"`/blackfire.so \
-    && echo "extension=blackfire.so\nblackfire.agent_socket=\${BLACKFIRE_PORT}" > /etc/php5/fpm/conf.d/00-blackfire.ini
-
+ENV AEROSPIKE_VERSION=3.4.9
 ENV PATH=/usr/local/bin:/bin:/usr/bin
 
-RUN echo 'date.timezone = UTC' > /etc/php5/fpm/conf.d/00-timezone.ini
-RUN echo 'date.timezone = UTC' > /etc/php5/cli/conf.d/00-timezone.ini
-ADD aerospike.ini /etc/php5/fpm/conf.d/00-aerospike.ini
-ADD aerospike.ini /etc/php5/cli/conf.d/00-aerospike.ini
+RUN composer require --ignore-platform-reqs aerospike/aerospike-client-php "$AEROSPIKE_VERSION" &&\
+    cd vendor/aerospike/aerospike-client-php/src/aerospike &&\
+    find . -name "*.sh" -exec chmod +x {} \; &&\
+    ./build.sh && make install && \
+  sh -c "\
+    echo 'date.timezone = UTC' > /etc/php/7.0/fpm/conf.d/00-timezone.ini; \
+    echo 'date.timezone = UTC' > /etc/php/7.0/cli/conf.d/00-timezone.ini; \
+    echo 'extension=aerospike.so' > '/etc/php/7.0/cli/conf.d/00-aerospike.ini' ; \
+    echo 'aerospike.udf.lua_system_path=/usr/local/aerospike/lua' >> '/etc/php/7.0/cli/conf.d/00-aerospike.ini'; \
+    echo 'aerospike.udf.lua_user_path=/usr/local/aerospike/usr-lua' >> '/etc/php/7.0/cli/conf.d/00-aerospike.ini'; \
+    echo 'extension=aerospike.so' > '/etc/php/7.0/fpm/conf.d/00-aerospike.ini'; \
+    echo 'aerospike.udf.lua_system_path=/usr/local/aerospike/lua' >> '/etc/php/7.0/fpm/conf.d/00-aerospike.ini'; \
+    echo 'aerospike.udf.lua_user_path=/usr/local/aerospike/usr-lua' >> '/etc/php/7.0/fpm/conf.d/00-aerospike.ini' "
 
-RUN unlink /etc/php5/fpm/conf.d/20-xdebug.ini \
- && unlink /etc/php5/cli/conf.d/20-xdebug.ini
-
-CMD ["/usr/sbin/php5-fpm", "-F"]
+CMD ["/usr/sbin/php-fpm7.0", "-F"]
