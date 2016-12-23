@@ -20,7 +20,7 @@ RUN sh -c "\
     echo 'deb http://packages.dotdeb.org jessie all' >> /etc/apt/sources.list ; \
     echo 'deb-src http://packages.dotdeb.org jessie all' >> /etc/apt/sources.list" && \
     apt-get update -qq -y &&\
-    apt-get install -y tzdata locales-all "php7.0-common=$PHP_VERSION" "php7.0-json=$PHP_VERSION" "php7.0-readline=$PHP_VERSION" "php7.0-opcache=$PHP_VERSION" "php7.0-cli=$PHP_VERSION" "php7.0-dev=$PHP_VERSION" "php7.0-xml=$PHP_VERSION" "php7.0-fpm=$PHP_VERSION" "php7.0-curl=$PHP_VERSION" "php7.0-mysql=$PHP_VERSION" "php7.0-pgsql=$PHP_VERSION" "php7.0-gd=$PHP_VERSION" "php7.0-sybase=$PHP_VERSION" php7.0-mongodb php7.0-memcached php7.0-apcu "php7.0-intl=$PHP_VERSION" php7.0-imagick "php7.0-mcrypt=$PHP_VERSION" --no-install-recommends &&\
+    apt-get install -y tzdata locales-all "php7.0-common=$PHP_VERSION" "php7.0-json=$PHP_VERSION" "php7.0-readline=$PHP_VERSION" "php7.0-opcache=$PHP_VERSION" "php7.0-cli=$PHP_VERSION" "php7.0-dev=$PHP_VERSION" "php7.0-xml=$PHP_VERSION" "php7.0-fpm=$PHP_VERSION" "php7.0-curl=$PHP_VERSION" "php7.0-mysql=$PHP_VERSION" "php7.0-pgsql=$PHP_VERSION" "php7.0-gd=$PHP_VERSION" "php7.0-sybase=$PHP_VERSION" php7.0-mongodb php7.0-memcached php7.0-apcu "php7.0-intl=$PHP_VERSION" php7.0-imagick php7.0-xdebug "php7.0-mcrypt=$PHP_VERSION" --no-install-recommends &&\
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
